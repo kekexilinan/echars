@@ -6,6 +6,16 @@ const postcss = px2rem({
 
 module.exports = {
   publicPath: './',
+  devServer: {
+   proxy: {
+     '/api': { 
+       target: 'http://10.24.34.207:5000/', 
+       changeOrigin: true, 
+       ws: true, 
+       pathRewrite: { '^/api':  '/api', }
+      }
+    }
+  },
   css: {
     loaderOptions: {
       postcss: {

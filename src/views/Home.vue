@@ -1,22 +1,53 @@
 <template>
   <div class="home">
-    <div class="nav" style="width: 2.2rem">
-      <a-button
-        type="primary"
-        style="margin-bottom: 16px; float: right; margin-right: 0.3rem"
-        @click="toggleCollapsed"
-      >
-        <a-icon :type="collapsed ? 'menu-unfold' : 'menu-fold'" />
-      </a-button>
-      <a-menu mode="vertical" theme="dark" v-if="collapsed">
-        <a-menu-item v-for="(list, index) in lists" :key="index">
-          <!-- <a-icon type="pie-chart" /> -->
-          <span @click="change(index)">{{ list.name }}</span>
-        </a-menu-item>
-      </a-menu>
-    </div>
     <div class="data-wrapper">
-      <top-header />
+      <div class="title">{{ config.os_name }}</div>
+      <div class="top-header">
+        <div style="margin: 10px">
+          <span style="display: inline-block; width: 2rem; margin-right: 1.1rem"
+            >group:
+          </span>
+          <a-select
+            style="width: 200px; line-height: 2rem"
+            default-value="请选择group"
+            size="large"
+            @change="changeTable"
+          >
+            <a-select-option
+              :value="item"
+              :key="index"
+              style="padding: 1rem"
+              v-for="(item, index) of tableList"
+            >
+              {{ item }}
+            </a-select-option>
+          </a-select>
+        </div>
+        <div>
+          <span
+            style="display: inline-block; width: 2rem; margin-right: 1.1rem"
+          >
+            table:
+          </span>
+          <a-select
+            style="width: 200px"
+            default-value="请选择table"
+            size="large"
+            @change="changeItem"
+          >
+            <a-select-option
+              :value="item.uid"
+              :key="index"
+              v-for="(item, index) of itemList"
+            >
+              {{ item.name }}
+            </a-select-option>
+          </a-select>
+        </div>
+        <a-button class="submit" size="large" type="primary" @click="submit">
+          点击
+        </a-button>
+      </div>
       <div class="sales-bar">
         <div class="sales-bar-inner">
           <vue-echarts :options="options" />
@@ -27,46 +58,45 @@
 </template>
 
 <script>
-// @ is an alias to /src
-import TopHeader from "../components/TopHeader/index";
-// import SalesBar from "../components/SalesBar/index";
-// import SalesLine from "../components/SalesLine/index";
+import axios from "axios";
 
-// import SalesPie from "../components/SalesPie/index";
-// import SalesMap from "../components/SalesMap/index";
-// import SalesSun from "../components/SalesSun/index";
-// import SalesRadar from "../components/SalesRadar/index";
-import list from "../unit/config.json";
-// import request from "../request";
 export default {
   name: "Home",
-  components: {
-    TopHeader,
-    // SalesBar,
-    // SalesLine,
-    // SalesPie,
-    // SalesMap,
-    // SalesSun,
-    // SalesRadar,
-  },
   data() {
     return {
-      collapsed: false,
-      showNum: 1,
-      lists: list,
-      options: list[0].options,
+      options: null,
+      config: { os_name: "" },
+      tableList: [],
+      itemList: [],
+      itemUid: "",
     };
   },
   methods: {
-    change: function (index) {
-      this.options = this.lists[index].options;
+    changeTable(value) {
+      this.itemList = this.config.table_group[value];
     },
-    toggleCollapsed() {
-      this.collapsed = !this.collapsed;
+    changeItem(value) {
+      this.itemUid = value;
+    },
+    submit() {
+      axios.get("/api/select/" + this.itemUid).then((res) => {
+        this.options = res.data;
+      });
     },
   },
-  mounted() {
-    this.options = list[0].options;
+  created() {
+    axios.get("/api/table-config").then((res) => {
+      this.config = res.data;
+      const group = this.config.table_group;
+      for (let item in group) {
+        this.tableList.push(item);
+      }
+      axios
+        .get("/api/select/" + this.config.table_group[this.tableList[0]][0].uid)
+        .then((res) => {
+          this.options = res.data;
+        });
+    });
   },
 };
 </script>
@@ -74,11 +104,41 @@ export default {
 .home {
   position: relative;
   height: 100%;
-  .nav {
-    position: fixed;
-    top: 0;
-    right: 0;
-    z-index: 2;
+  width: 100%;
+  .title {
+    margin-top: 3rem;
+    color: #fff;
+    font-size: 2rem;
+    font-weight: 4rem;
+    text-align: center;
+  }
+  .top-header {
+    position: relative;
+    top: 1rem;
+    color: #fff;
+    left: -1rem;
+    z-index: 10;
+    width: 100%;
+    height: 300px;
+    padding: 50px 24px 24px;
+    box-sizing: border-box;
+    text-align: center;
+    transform: scale(1.1);
+    .sub-title {
+      font-size: 36px;
+      margin-top: 20px;
+    }
+    .date {
+      font-size: 24px;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 40px;
+    }
+    .submit {
+      position: absolute;
+      right: 1.5rem;
+      top: 43%;
+    }
   }
   .data-wrapper {
     position: absolute;
@@ -93,7 +153,7 @@ export default {
   }
   .sales-bar {
     position: absolute;
-    top: 300px;
+    top: 14rem;
     left: 0;
     z-index: 10;
     width: 100%;
